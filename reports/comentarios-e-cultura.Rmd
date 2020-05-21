@@ -2,6 +2,8 @@
 title: "Comentários e cultura"
 output:
     html_document:
+        code_folding: hide
+        css: styles.css
     df_print: paged
 theme: sandstone
 ---
@@ -10,12 +12,16 @@ theme: sandstone
 library(tidyverse)
 library(here)
 library(viridis)
-source(here::here("code/lib.R"))
-theme_set(theme_bw())
+source(here::here("code/import_data.R"))
+library(hrbrthemes)
+theme_set(theme_ipsum_rc())
 
 knitr::opts_chunk$set(tidy = FALSE,
-                      fig.width = 6,
-                      fig.height = 5)
+                      fig.width = 7,
+                      fig.height = 5,
+                      fig.align = "center")
+
+options(scipen = 9999)
 ```
 
 ```{r read}
@@ -44,11 +50,135 @@ Considerando essa variável, queremos examinar a relação entre ela e o quão h
 
 Faça uma visualização que usa os princípios de eficácia no projeto de visualizações para facilitar as comparações que você acha que são as mais importantes para entendermos esse contexto. 
 
+```{r}
+dados %>% 
+    ggplot(aes(x = comentaram_prop,
+               y = PDI,
+               colour = Internet,
+               size = usuarios)) +
+    geom_point(alpha = .75) +
+    scale_color_gradient(low = "lightskyblue1",
+                         space = "Lab",
+                         high = "dodgerblue4",
+                         aesthetics = "colour") +
+    labs(x = "Proporção de comentários",
+         size = "Usuários",
+         colour = "Acesso à Internet (%)")
+```
+
+```{r}
+cor_comentarios_pdi <- cor(dados %>% pull(comentaram_prop), dados %>% pull(PDI), method = "pearson")
+```
+
+A relação entre a quantidade de pessoas de um país que comentam em questões (`comentaram_prop`) e quão hierárquicas são as relações em um país (`PDI`) é linear, moderada e negativa, pois os valores da variável (`PDI`) diminuem à medida que `(comentaram_prop`) aumentam. Quantificando essa relação com um coeficiente de correlação, obtemos o valor `r round(cor_comentarios_pdi, 3)`, confirmando a relação moderada e negativa. 
+
+É possível, ainda, relacionar essas variáveis com outras duas: a quantidade de usuários (`usuarios`) e a porcentagem de acesso à Internet (`Internet`) de um país, associadas aos canais de tamanho e cor, respectivamente. Observamos que países que postam mais comentários possuem mais usuários, mais acesso à internet e relações menos hierárquicas, enquanto que países com mais relações hierárquicas e menos acesso à Internet postam menos comentários.
+
 ## Outras formas de ver
 
 Em seguida, faça 5 visualizações que usem as mesmas variáveis e também pontos, mas que sejam **menos eficazes** que a que você escolheu acima. 
+
+As visualizações abaixo utilizarão diferentes mapeamentos de canais para tamanho e cores, de forma a diminuirem a eficiência da visualização tornando mais difíceis as tarefas de distinção de tamanhos e identificação de padrões por cores a partir de variáveis cuja distribuição não auxiliem nestas tarefas.
+
+```{r}
+dados %>% 
+    ggplot(aes(x = PDI,
+               y = comentaram_prop,
+               colour = usuarios,
+               size = Internet)) +
+    geom_point(na.rm = T,
+               alpha = .7) +
+    scale_color_distiller(palette="Spectral") +
+    labs(y = "Proporção de comentários",
+         size = "Acesso à Internet (%)",
+         colour = "Usuários")
+```
+
+```{r}
+dados %>% 
+    ggplot(aes(x = comentaram_prop,
+               y = PDI,
+               colour = usuarios,
+               size = Internet)) +
+    geom_point(na.rm = T,
+               alpha = .7) +
+    scale_color_distiller(palette="BrBG") +
+    labs(x = "Proporção de comentários",
+         colour = "Usuários",
+         size = "Acesso à Internet (%)")
+```
+
+```{r}
+dados %>% 
+    ggplot(aes(x = PDI,
+               y = comentaram_prop,
+               colour = Internet,
+               size = usuarios)) +
+    geom_point(na.rm = T,
+               alpha = .85) +
+    scale_color_distiller(palette="PiYG") +
+    labs(y = "Proporção de comentários",
+         colour = "Acesso à Internet (%)",
+         size = "Usuários")
+```
+
+```{r}
+dados %>% 
+    ggplot(aes(x = PDI,
+               y = comentaram_prop,
+               colour = usuarios,
+               size = Internet)) +
+    geom_point(na.rm = T) +
+    scale_color_distiller(palette="Paired") +
+    scale_y_log10() +
+    labs(y = "Proporção de comentários",
+         size = "Acesso à Internet (%)",
+         colour = "Usuários")
+```
+
+```{r}
+dados %>% 
+    ggplot(aes(x = comentaram_prop,
+               y = PDI,
+               colour = Internet,
+               size = usuarios)) +
+    geom_point(na.rm = T) +
+    scale_color_distiller(palette="Set2") +
+    labs(x = "Proporção de comentários",
+         colour = "Acesso à Internet (%)",
+         size = "Usuários")
+```
 
 ## Bônus
 
 Inclua o continente dos países (`six_regions`) na visualização.
 
+```{r fig.height=7}
+dados %>% 
+    filter(!is.na(six_regions)) %>% 
+    mutate(six_regions = case_when(
+        six_regions == "america" ~ "America",
+        six_regions == "east_asia_pacific" ~ "East Asia Pacific",
+        six_regions == "europe_central_asia" ~ "Europe Central Asia",
+        six_regions == "south_asia" ~ "South Asia",
+        six_regions == "middle_east_north_africa" ~ "Middle East North \nAfrica",
+        six_regions == "sub_saharan_africa" ~ "Sub Saharan Africa",
+        TRUE ~ six_regions
+    )) %>% 
+    ggplot(aes(x = comentaram_prop,
+               y = PDI,
+               colour = Internet,
+               size = usuarios)) +
+    geom_point() +
+    scale_color_gradient(low = "lightskyblue1",
+                         space = "Lab",
+                         high = "dodgerblue4",
+                         aesthetics = "colour") +
+    facet_wrap(six_regions ~ .,
+               nrow = 4,
+               ncol = 2) +
+    theme(strip.text = element_text(size = 11)) +
+    labs(x = "Proporção de comentários",
+         size = "Usuários",
+         colour = "Acesso à Internet (%)")
+```
